@@ -6486,9 +6486,7 @@ XXH_FORCE_INLINE const xxh_u8 *
 XXH3_consumeStripes(xxh_u64* XXH_RESTRICT acc,
                     size_t* XXH_RESTRICT nbStripesSoFarPtr, size_t nbStripesPerBlock,
                     const xxh_u8* XXH_RESTRICT input, size_t nbStripes,
-                    const xxh_u8* XXH_RESTRICT secret, size_t secretLimit,
-                    XXH3_f_accumulate f_acc,
-                    XXH3_f_scrambleAcc f_scramble)
+                    const xxh_u8* XXH_RESTRICT secret, size_t secretLimit)
 {
     const xxh_u8* initialSecret = secret + *nbStripesSoFarPtr * XXH_SECRET_CONSUME_RATE;
     /* Process full blocks */
@@ -6498,8 +6496,8 @@ XXH3_consumeStripes(xxh_u64* XXH_RESTRICT acc,
 
         do {
             /* Accumulate and scramble */
-            f_acc(acc, input, initialSecret, nbStripesThisIter);
-            f_scramble(acc, secret + secretLimit);
+            XXH3_accumulate(acc, input, initialSecret, nbStripesThisIter);
+            XXH3_scrambleAcc(acc, secret + secretLimit);
             input += nbStripesThisIter * XXH_STRIPE_LEN;
             nbStripes -= nbStripesThisIter;
             /* Then continue the loop with the full block size */
@@ -6510,7 +6508,7 @@ XXH3_consumeStripes(xxh_u64* XXH_RESTRICT acc,
     }
     /* Process a partial block */
     if (nbStripes > 0) {
-        f_acc(acc, input, initialSecret, nbStripes);
+        XXH3_accumulate(acc, input, initialSecret, nbStripes);
         input += nbStripes * XXH_STRIPE_LEN;
         *nbStripesSoFarPtr += nbStripes;
     }
@@ -6526,11 +6524,9 @@ XXH3_consumeStripes(xxh_u64* XXH_RESTRICT acc,
 /*
  * Both XXH3_64bits_update and XXH3_128bits_update use this routine.
  */
-XXH_FORCE_INLINE XXH_errorcode
+static XXH_errorcode
 XXH3_update(XXH3_state_t* XXH_RESTRICT const state,
-            const xxh_u8* XXH_RESTRICT input, size_t len,
-            XXH3_f_accumulate f_acc,
-            XXH3_f_scrambleAcc f_scramble)
+            const xxh_u8* XXH_RESTRICT input, size_t len)
 {
     if (input==NULL) {
         XXH_ASSERT(len == 0);
@@ -6575,8 +6571,7 @@ XXH3_update(XXH3_state_t* XXH_RESTRICT const state,
             XXH3_consumeStripes(acc,
                                &state->nbStripesSoFar, state->nbStripesPerBlock,
                                 state->buffer, XXH3_INTERNALBUFFER_STRIPES,
-                                secret, state->secretLimit,
-                                f_acc, f_scramble);
+                                secret, state->secretLimit);
             state->bufferedSize = 0;
         }
         XXH_ASSERT(input < bEnd);
@@ -6585,8 +6580,7 @@ XXH3_update(XXH3_state_t* XXH_RESTRICT const state,
             input = XXH3_consumeStripes(acc,
                                        &state->nbStripesSoFar, state->nbStripesPerBlock,
                                        input, nbStripes,
-                                       secret, state->secretLimit,
-                                       f_acc, f_scramble);
+                                       secret, state->secretLimit);
             XXH_memcpy(state->buffer + sizeof(state->buffer) - XXH_STRIPE_LEN, input - XXH_STRIPE_LEN, XXH_STRIPE_LEN);
 
         }
@@ -6609,8 +6603,7 @@ XXH3_update(XXH3_state_t* XXH_RESTRICT const state,
 XXH_PUBLIC_API XXH_errorcode
 XXH3_64bits_update(XXH_NOESCAPE XXH3_state_t* state, XXH_NOESCAPE const void* input, size_t len)
 {
-    return XXH3_update(state, (const xxh_u8*)input, len,
-                       XXH3_accumulate, XXH3_scrambleAcc);
+    return XXH3_update(state, (const xxh_u8*)input, len);
 }
 
 
@@ -6634,8 +6627,7 @@ XXH3_digest_long (XXH64_hash_t* acc,
         XXH3_consumeStripes(acc,
                            &nbStripesSoFar, state->nbStripesPerBlock,
                             state->buffer, nbStripes,
-                            secret, state->secretLimit,
-                            XXH3_accumulate, XXH3_scrambleAcc);
+                            secret, state->secretLimit);
         lastStripePtr = state->buffer + state->bufferedSize - XXH_STRIPE_LEN;
     } else {  /* bufferedSize < XXH_STRIPE_LEN */
         /* Copy to temp buffer */
@@ -7146,7 +7138,7 @@ XXH3_128bits_reset_withSecretandSeed(XXH_NOESCAPE XXH3_state_t* statePtr, XXH_NO
 XXH_PUBLIC_API XXH_errorcode
 XXH3_128bits_update(XXH_NOESCAPE XXH3_state_t* state, XXH_NOESCAPE const void* input, size_t len)
 {
-    return XXH3_64bits_update(state, input, len);
+    return XXH3_update(state, (const xxh_u8*)input, len);
 }
 
 /*! @ingroup XXH3_family */
