@@ -210,8 +210,8 @@ static int XSUM_algoBitmask_Accepts(XSUM_U32 algoBitmask, AlgoSelected parsedLin
 *  File Hashing
 **********************************************************/
 
-#define XXHSUM32_DEFAULT_SEED 0                   /* Default seed for algo_xxh32 */
-#define XXHSUM64_DEFAULT_SEED 0                   /* Default seed for algo_xxh64 */
+XSUM_U32 XXHSUM32_DEFAULT_SEED = 0;                   /* Default seed for algo_xxh32 */
+XSUM_U64 XXHSUM64_DEFAULT_SEED = 0;                   /* Default seed for algo_xxh64 */
 
 /* for support of --little-endian display mode */
 static void XSUM_display_LittleEndian(const void* ptr, size_t length)
@@ -1395,7 +1395,7 @@ static int XSUM_usage(const char* exename)
     XSUM_log( "                       0: XXH32 \n");
     XSUM_log( "                       1: XXH64 \n");
     XSUM_log( "                       2: XXH128 (also called XXH3_128bits) \n");
-    XSUM_log( "                       3: XXH3 (also called XXH3_64bits) \n");
+    XSUM_log( "                       3: XXH3   (also called XXH3_64bits) \n");
     XSUM_log( "  -c, --check          read xxHash checksum from [files] and check them \n");
     XSUM_log( "      --files-from     generate hashes for files listed in [files] \n");
     XSUM_log( "      --filelist       generate hashes for files listed in [files] \n");
@@ -1412,6 +1412,7 @@ static int XSUM_usage_advanced(const char* exename)
     XSUM_log( "      --tag            Produce BSD-style checksum lines \n");
     XSUM_log( "      --little-endian  Checksum values use little endian convention (default: big endian) \n");
     XSUM_log( "      --binary         Read in binary mode \n");
+    XSUM_log( "  -s#,                 Set seed (default: 0 [max: 2^32]) \n");
     XSUM_log( "  -b                   Run benchmark \n");
     XSUM_log( "  -b#                  Bench only algorithm variant # \n");
     XSUM_log( "  -i#                  Number of times to run the benchmark (default: %i) \n", NBLOOPS_DEFAULT);
@@ -1634,6 +1635,18 @@ XSUM_API int XSUM_main(int argc, const char* argv[])
             case 'q':
                 argument++;
                 XSUM_logLevel--;
+                break;
+
+            /* Modify seed */
+            case 's': argument++;
+                switch( algo ){
+                    case algo_xxh32:  XXHSUM32_DEFAULT_SEED = XSUM_readU32FromChar(&argument); break;
+                    case algo_xxh64:  XXHSUM64_DEFAULT_SEED = XSUM_readU32FromChar(&argument); break;
+                    case algo_xxh3:   break;
+                    case algo_xxh128: break;
+                    default:
+                        return XSUM_badusage(exename);
+                }
                 break;
 
             default:
