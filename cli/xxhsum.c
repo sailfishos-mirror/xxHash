@@ -248,12 +248,11 @@ XSUM_hashStream(FILE* inFile,
 {
     XXH32_state_t state32;
     XXH64_state_t state64;
-    XXH3_state_t  state3;
+    XXH3_state_t  state3 = {0};
 
     /* Init */
     (void)XXH32_reset(&state32, g_default_seed_u32);
     (void)XXH64_reset(&state64, g_default_seed_u64);
-    (void)XXH3_128bits_reset(&state3);
     (void)XXH3_128bits_reset_withSeed(&state3, g_default_seed_u64);
 
     /* Load file & update hash */
