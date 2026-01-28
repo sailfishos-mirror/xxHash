@@ -248,7 +248,8 @@ XSUM_hashStream(FILE* inFile,
 {
     XXH32_state_t state32;
     XXH64_state_t state64;
-    XXH3_state_t  state3 = {0};
+    XXH3_state_t  state3;
+    memset( &state3, 0, sizeof(state3) );
 
     /* Init */
     (void)XXH32_reset(&state32, g_default_seed_u32);
