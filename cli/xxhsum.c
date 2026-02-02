@@ -1413,7 +1413,7 @@ static int XSUM_usage_advanced(const char* exename)
     XSUM_log( "      --tag            Produce BSD-style checksum lines \n");
     XSUM_log( "      --little-endian  Checksum values use little endian convention (default: big endian) \n");
     XSUM_log( "      --binary         Read in binary mode \n");
-    XSUM_log( "  -s#,                 Set seed (default: 0) \n");
+    XSUM_log( "      --seed #         Set seed (default: 0) \n");
     XSUM_log( "  -b                   Run benchmark \n");
     XSUM_log( "  -b#                  Bench only algorithm variant # \n");
     XSUM_log( "  -i#                  Number of times to run the benchmark (default: %i) \n", NBLOOPS_DEFAULT);
@@ -1566,6 +1566,20 @@ XSUM_API int XSUM_main(int argc, const char* argv[])
         if (!strcmp(argument, "--help")) { return XSUM_usage_advanced(exename); }
         if (!strcmp(argument, "--version")) { XSUM_log(FULL_WELCOME_MESSAGE(exename)); XSUM_sanityCheck(); return 0; }
         if (!strcmp(argument, "--tag")) { convention = display_bsd; continue; }
+        if (!strcmp(argument, "--seed") ){
+            const char* seed_str;
+            i++;
+            seed_str = argv[i];
+            switch( algo ){
+                    case algo_xxh32  : g_default_seed_u32 = XSUM_readU32FromChar(&seed_str); break;
+                    case algo_xxh64  :
+                    case algo_xxh3   :
+                    case algo_xxh128 : g_default_seed_u64 = XSUM_readU64FromChar(&seed_str); break;
+                    default:
+                        return XSUM_usage_advanced(exename);
+                }
+            continue;
+        }
 
         if (!strcmp(argument, "--")) {
             if (filenamesStart==0 && i!=argc-1) filenamesStart=i+1; /* only supports a continuous list of filenames */
@@ -1658,18 +1672,6 @@ XSUM_API int XSUM_main(int argc, const char* argv[])
             case 'q':
                 argument++;
                 XSUM_logLevel--;
-                break;
-
-            /* Modify seed */
-            case 's': argument++;
-                switch( algo ){
-                    case algo_xxh32  : g_default_seed_u32 = XSUM_readU32FromChar(&argument); break;
-                    case algo_xxh64  :
-                    case algo_xxh3   :
-                    case algo_xxh128 : g_default_seed_u64 = XSUM_readU64FromChar(&argument); break;
-                    default:
-                        return XSUM_badusage(exename);
-                }
                 break;
 
             default:
